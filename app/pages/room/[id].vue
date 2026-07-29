@@ -56,7 +56,7 @@ function backToLobby() {
         <p class="hint">下一步：在这里加入画板和猜词功能</p>
 
         <!-- 测试 Socket 连通性 -->
-        <button class="test-btn" @click="emit('ping')">
+        <button class="test-btn" @click="socketEmit('ping')">
           发送 ping 测试
         </button>
         <p class="hint" v-if="socketStatus === 'connected'">

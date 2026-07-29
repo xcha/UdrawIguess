@@ -111,10 +111,13 @@ export function useSocketStatus() {
 /**
  * 发送事件
  *
- * 调用方式：emit('event_name', data)
+ * 调用方式：socketEmit('event_name', data)
  * 服务端用 socket.on('event_name', (data) => {}) 接收
+ *
+ * 为什么不叫 emit？因为 Vue 组件里 emit 通常指 defineEmits 的返回值，
+ * 改名 socketEmit 避免混淆
  */
-export function emit(event: string, ...args: any[]) {
+export function socketEmit(event: string, ...args: any[]) {
   const s = getSocket()
   s.emit(event, ...args)
 }
