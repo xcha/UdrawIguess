@@ -2,182 +2,93 @@
 /**
  * 游戏房间页
  *
- * 路由：/room/:id
- * 这个 :id 会通过 useRoute().params.id 取到
- *
- * 当前是"占位版本"——先验证路由跳转和 Socket 连接
- * 后面会逐步加入：画板、猜词输入、玩家列表、计分
+ * 用 shadcn-vue 的 Card、Badge、Button 重写
+ * Badge 的 variant 根据连接状态动态切换
  */
+import { ArrowLeft } from 'lucide-vue-next'
+import type { BadgeVariants } from '@/components/ui/badge'
 
-// useRoute() 是 Nuxt 自动导入的，获取当前路由信息
 const route = useRoute()
 const roomId = computed(() => route.params.id as string)
 
-// 从 localStorage 读取昵称（首页存的）
-const playerName = ref(localStorage.getItem('playerName') || '玩家')
-
-// 如果没有昵称（比如直接访问 URL），回首页
-if (!localStorage.getItem('playerName')) {
-  navigateTo('/')
-}
-
-/**
- * 这里调用 useSocketStatus() 触发连接
- *
- * 当前是占位阶段，先验证连接是否成功
- */
+const playerName = ref('')
 const socketStatus = useSocketStatus()
 
-// 返回大厅
+onMounted(() => {
+  const name = localStorage.getItem('playerName')
+  if (!name) {
+    navigateTo('/')
+    return
+  }
+  playerName.value = name
+})
+
+// 根据连接状态算出 Badge 的样式变体
+const statusVariant = computed<BadgeVariants['variant']>(() => {
+  switch (socketStatus.value) {
+    case 'connected': return 'success'
+    case 'connecting': return 'warning'
+    default: return 'error'
+  }
+})
+
+const statusText = computed(() => {
+  switch (socketStatus.value) {
+    case 'connected': return '已连接'
+    case 'connecting': return '连接中...'
+    default: return '未连接'
+  }
+})
+
 function backToLobby() {
   navigateTo('/')
 }
 </script>
 
 <template>
-  <div class="room">
-    <header class="room-header">
-      <button class="back-btn" @click="backToLobby">← 返回</button>
-      <div class="room-info">
-        <span class="room-label">房间号</span>
-        <span class="room-id">{{ roomId }}</span>
+  <!-- h-dvh 是动态视口高度，解决移动端 Safari 的 100vh bug -->
+  <div class="flex h-dvh flex-col">
+    <header class="flex items-center justify-between border-b bg-card/50 px-4 py-3">
+      <UiButton variant="ghost" size="sm" @click="backToLobby">
+        <ArrowLeft class="size-4" />
+        返回
+      </UiButton>
+
+      <div class="text-center">
+        <div class="text-xs text-muted-foreground">房间号</div>
+        <div class="text-lg font-bold tracking-wider text-primary">{{ roomId }}</div>
       </div>
-      <div class="status" :class="socketStatus">
-        {{ socketStatus === 'connected' ? '已连接' : socketStatus === 'connecting' ? '连接中...' : '未连接' }}
-      </div>
+
+      <UiBadge :variant="statusVariant">{{ statusText }}</UiBadge>
     </header>
 
-    <main class="room-body">
-      <div class="placeholder">
-        <div class="emoji-large">🎨</div>
-        <h2>游戏房间已就绪</h2>
-        <p>房间号：<strong>{{ roomId }}</strong></p>
-        <p>玩家：<strong>{{ playerName }}</strong></p>
-        <p class="hint">下一步：在这里加入画板和猜词功能</p>
+    <main class="flex flex-1 items-center justify-center p-5">
+      <UiCard class="w-full max-w-md text-center">
+        <UiCardHeader>
+          <div class="text-6xl">🎨</div>
+          <UiCardTitle class="text-xl">游戏房间已就绪</UiCardTitle>
+        </UiCardHeader>
 
-        <!-- 测试 Socket 连通性 -->
-        <button class="test-btn" @click="socketEmit('ping')">
-          发送 ping 测试
-        </button>
-        <p class="hint" v-if="socketStatus === 'connected'">
-          ✅ 已连接服务器，点击按钮看控制台输出
-        </p>
-      </div>
+        <UiCardContent class="space-y-2">
+          <p class="text-sm text-muted-foreground">
+            房间号 <span class="font-semibold text-foreground">{{ roomId }}</span>
+          </p>
+          <p class="text-sm text-muted-foreground">
+            玩家 <span class="font-semibold text-foreground">{{ playerName }}</span>
+          </p>
+          <p class="text-xs text-muted-foreground mt-4">
+            下一步：在这里加入画板和猜词功能
+          </p>
+
+          <UiButton class="mt-2" @click="socketEmit('ping')">
+            发送 ping 测试
+          </UiButton>
+
+          <p v-if="socketStatus === 'connected'" class="text-xs text-muted-foreground mt-2">
+            ✅ 已连接服务器，点击按钮看控制台输出
+          </p>
+        </UiCardContent>
+      </UiCard>
     </main>
   </div>
 </template>
-
-<style scoped>
-.room {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  /* 防止移动端 Safari 的 100vh bug */
-  height: 100dvh;
-}
-
-.room-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: rgba(0, 0, 0, 0.3);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.back-btn {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #ddd;
-  padding: 6px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.room-info {
-  text-align: center;
-}
-
-.room-label {
-  display: block;
-  font-size: 11px;
-  color: #888;
-}
-
-.room-id {
-  font-size: 18px;
-  font-weight: 700;
-  color: #667eea;
-  letter-spacing: 1px;
-}
-
-.status {
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.status.connected {
-  background: rgba(76, 175, 80, 0.2);
-  color: #4caf50;
-}
-
-.status.connecting {
-  background: rgba(255, 193, 7, 0.2);
-  color: #ffc107;
-}
-
-.status.disconnected,
-.status.error {
-  background: rgba(244, 67, 54, 0.2);
-  color: #f44336;
-}
-
-.room-body {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  overflow: auto;
-}
-
-.placeholder {
-  text-align: center;
-  color: #ccc;
-}
-
-.emoji-large {
-  font-size: 64px;
-  margin-bottom: 16px;
-}
-
-.placeholder h2 {
-  margin-bottom: 12px;
-  color: #fff;
-}
-
-.placeholder p {
-  margin: 6px 0;
-  font-size: 15px;
-}
-
-.hint {
-  color: #666 !important;
-  font-size: 13px !important;
-  margin-top: 20px !important;
-}
-
-.test-btn {
-  margin-top: 16px;
-  padding: 10px 24px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  cursor: pointer;
-}
-</style>

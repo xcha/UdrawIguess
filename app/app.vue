@@ -1,34 +1,19 @@
+<script setup lang="ts">
+/**
+ * 根组件
+ *
+ * 关键：useHead 给 <html> 加 dark class
+ * 这样 main.css 里的 .dark 主题变量就生效了
+ * 在服务端就渲染出来，避免主题闪烁（FOUC）
+ */
+useHead({
+  htmlAttrs: { class: 'dark' },
+})
+</script>
+
 <template>
-  <div class="app">
+  <div>
+    <NuxtRouteAnnouncer />
     <NuxtPage />
   </div>
 </template>
-
-<style>
-/* 全局基础样式 - 所有页面共用 */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background: #1a1a2e;
-  color: #eee;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
-/* 移动端触摸优化 */
-button, input {
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-.app {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-</style>
